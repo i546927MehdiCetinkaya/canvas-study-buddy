@@ -88,11 +88,5 @@
     { "name": "end-of-week", "description": "Week wrap-up", "text": "End of week wrap-up. Use get-study-progress, get-upcoming-deadlines (days=7), get-missed-deadlines, and get-all-feedback (days=7). Show what's done, open, and urgent for next week." },
     { "name": "health-check", "description": "Study health check", "text": "Study health check. Use get-all-courses, get-study-progress per course, get-my-grades, get-missed-deadlines, and get-unread-feedback. Flag courses where I'm falling behind." },
     { "name": "catch-up-plan", "description": "Make a catch-up plan", "arguments": ["vak"], "text": "Make a catch-up plan for \"{vak}\". Use get-all-courses, get-submission-status, get-missed-deadlines, and get-upcoming-deadlines (days=30). Create a prioritized day-by-day plan." }
-  ],
-  "permissions": [
-    {
-      "type": "network",
-      "description": "Required to connect to Canvas LMS API"
-    }
   ]
 }
