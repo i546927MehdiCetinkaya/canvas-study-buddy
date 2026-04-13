@@ -53,7 +53,7 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 
 Restart Claude Desktop and ask: *"What are my deadlines?"*
 
-## Tools (28)
+## Tools (29)
 
 | Category | Tools |
 |----------|-------|
@@ -62,7 +62,7 @@ Restart Claude Desktop and ask: *"What are my deadlines?"*
 | **Grades** | `get-my-grades` `get-assignment-feedback` `get-all-feedback` `get-unread-feedback` `get-rubric-scores` |
 | **Content** | `get-page-content` `search-all-content` `get-module-content` `get-recent-updates` |
 | **Communication** | `get-course-announcements` `get-all-announcements` `get-unread-announcements` `get-inbox-messages` `get-discussion-posts` |
-| **Planning** | `get-study-progress` `get-course-calendar` `get-quiz-results` `get-learning-outcomes` |
+| **Planning** | `get-study-progress` `get-course-calendar` `get-quiz-results` `get-learning-outcomes` `export-to-calendar` |
 
 ## Prompts (12)
 
@@ -98,12 +98,19 @@ Deadlines are automatically marked:
 - "Where am I falling behind?"
 - "Make a catch-up plan for Software Engineering"
 - "Search for 'machine learning' across all courses"
+- "Export my deadlines to a calendar file"
+
+## Calendar Export (.ics)
+
+Export deadlines as a `.ics` file and import into Google Calendar, Apple Calendar or Outlook.
+
+Ask Claude: *"Export my deadlines to a calendar file"* — it saves `canvas-deadlines.ics` to your Downloads folder.
+
+Each event includes the course name, assignment name, points, submission type, source module/page, and a direct link to Canvas. A reminder is set 24 hours before each deadline.
 
 ## Roadmap
 
 **Multi-School Support** — Currently configured for Fontys (`fhict.instructure.com`). Future version will support Dutch institutions via a `SCHOOL` env variable (Fontys, HvA, TU/e, UvA, VU, HU, Saxion).
-
-**Calendar Export (.ics)** — Export all deadlines as `.ics` file for Google Calendar, Apple Calendar, Outlook.
 
 ## Development
 

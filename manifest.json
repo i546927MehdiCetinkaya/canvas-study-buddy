@@ -73,7 +73,8 @@
     { "name": "get-study-progress", "description": "Study progress per course" },
     { "name": "get-course-calendar", "description": "Calendar events and deadlines" },
     { "name": "get-quiz-results", "description": "Quiz results" },
-    { "name": "get-learning-outcomes", "description": "Learning outcomes per course" }
+    { "name": "get-learning-outcomes", "description": "Learning outcomes per course" },
+    { "name": "export-to-calendar", "description": "Export deadlines as .ics calendar file" }
   ],
   "prompts": [
     { "name": "morning-briefing", "description": "Daily morning briefing", "text": "Give my morning briefing: new announcements, today's deadlines, unread feedback. Use get-unread-announcements, get-upcoming-deadlines (days=2), and get-unread-feedback." },

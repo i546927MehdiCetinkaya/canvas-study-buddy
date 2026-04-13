@@ -11,6 +11,7 @@ import { registerGradeTools } from './tools/grades.js';
 import { registerContentTools } from './tools/content.js';
 import { registerAnnouncementTools } from './tools/announcements.js';
 import { registerPlanningTools } from './tools/planning.js';
+import { registerCalendarTools } from './tools/calendar.js';
 import { registerPrompts } from './tools/prompts.js';
 
 // Laad environment variabelen
@@ -44,6 +45,7 @@ registerGradeTools(server, canvas);
 registerContentTools(server, canvas);
 registerAnnouncementTools(server, canvas);
 registerPlanningTools(server, canvas);
+registerCalendarTools(server, canvas);
 registerPrompts(server, canvas);
 
 // Start de server
