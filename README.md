@@ -16,8 +16,11 @@ You need a **Canvas API Token**:
 ## Quick Install (One-Click)
 
 1. Download [`canvas-study-buddy-1.0.0.dxt`](https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/releases/latest)
-2. Open the `.dxt` file with **Claude Desktop** (right-click > Open with > Claude)
-3. Click **Install** when prompted
+2. Open the `.dxt` file — when Windows asks which app to use, click **"Choose an app on your PC"** and browse to:
+   ```
+   C:\Users\<YourUsername>\AppData\Local\AnthropicClaude\claude.exe
+   ```
+3. Click **Install** when Claude Desktop prompts you
 4. Enter your Canvas API Token and Base URL
 5. Done — ask Claude *"What are my deadlines?"*
 
