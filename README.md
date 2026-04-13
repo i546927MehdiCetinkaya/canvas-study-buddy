@@ -13,7 +13,15 @@ You need a **Canvas API Token**:
 3. Click **"+ New Access Token"**, name it "Study Buddy", click **Generate**
 4. **Copy the token** — you can only see it once!
 
-## Installation
+## Quick Install (One-Click)
+
+1. Download [`canvas-study-buddy-1.0.0.dxt`](https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/releases/latest)
+2. Double-click the `.dxt` file
+3. Click **Install** in Claude Desktop
+4. Enter your Canvas API Token and Base URL
+5. Done — ask Claude *"What are my deadlines?"*
+
+## Manual Installation
 
 ```bash
 git clone https://github.com/i546927MehdiCetinkaya/canvas-study-buddy.git
