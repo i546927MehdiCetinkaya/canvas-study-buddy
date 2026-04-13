@@ -4,22 +4,34 @@ Jouw persoonlijke studiebegeleider voor Canvas LMS. Een MCP server voor Claude D
 
 Geforkt van [r-huijts/canvas-mcp](https://github.com/r-huijts/canvas-mcp) en omgebouwd van docent-gerichte tools naar een volwaardige student Study Buddy.
 
-## Installatie (One-Click)
+## Voordat je begint: Canvas API Token aanmaken
+
+Dit heb je nodig voor elke installatiemethode:
+
+1. Ga naar [Canvas](https://fhict.instructure.com) > **Account** > **Instellingen**
+2. Scroll naar **"Goedgekeurde integraties"**
+3. Klik op **"+ Nieuwe toegangstoken"**
+4. Geef het een naam (bijv. "Study Buddy") en klik **Genereer token**
+5. **Kopieer het token** - je kunt het maar 1x zien!
+
+## Installatie (One-Click met Claude Desktop Extension)
+
+De makkelijkste manier - geen terminal nodig:
 
 1. Download `canvas-study-buddy-x.x.x.dxt` uit de [laatste release](https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/releases)
-2. Dubbelklik het .dxt bestand
+2. Dubbelklik het `.dxt` bestand
 3. Klik **Install** in Claude Desktop
-4. Vul je Canvas API token in via de UI
-5. Klaar!
+4. Vul je **Canvas API Token** in (zie hierboven)
+5. Laat de **Base URL** op `https://fhict.instructure.com` staan (Fontys)
+6. Klaar! Open Claude Desktop en vraag bijv. *"Wat zijn mijn deadlines?"*
 
 ## Installatie (Handmatig)
 
 ### Vereisten
-- Node.js 20+
-- npm
-- Een Canvas API token
+- [Node.js 20+](https://nodejs.org/)
+- Een Canvas API token (zie hierboven)
 
-### Setup
+### Stap 1: Clone en bouw
 
 ```bash
 git clone https://github.com/i546927MehdiCetinkaya/canvas-study-buddy.git
@@ -28,39 +40,43 @@ npm install
 npm run build
 ```
 
-### Configuratie
+### Stap 2: Configureer je token
 
-Maak een `.env` bestand aan:
+```bash
+cp .env.example .env
+```
+
+Open `.env` en vervang `your_canvas_api_token_here` met je echte token:
 
 ```env
-CANVAS_API_TOKEN=jouw_canvas_api_token
+CANVAS_API_TOKEN=jouw_echte_token_hier
 CANVAS_BASE_URL=https://fhict.instructure.com
 ```
 
-**Canvas API Token aanmaken:**
-1. Ga naar Canvas > Account > Instellingen
-2. Scroll naar "Goedgekeurde integraties"
-3. Klik op "+ Nieuwe toegangstoken"
-4. Kopieer het token
+### Stap 3: Koppel aan Claude Desktop
 
-### Claude Desktop configuratie
-
-Voeg dit toe aan je Claude Desktop `claude_desktop_config.json`:
+Open Claude Desktop instellingen en voeg deze MCP server toe aan `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "canvas-study-buddy": {
       "command": "node",
-      "args": ["/pad/naar/canvas-study-buddy/dist/index.js"],
+      "args": ["/volledig/pad/naar/canvas-study-buddy/dist/index.js"],
       "env": {
-        "CANVAS_API_TOKEN": "jouw_canvas_api_token",
+        "CANVAS_API_TOKEN": "jouw_echte_token_hier",
         "CANVAS_BASE_URL": "https://fhict.instructure.com"
       }
     }
   }
 }
 ```
+
+> **Tip:** Vervang `/volledig/pad/naar/` met het daadwerkelijke pad waar je de repo hebt gecloned.
+
+### Stap 4: Test
+
+Herstart Claude Desktop en vraag: *"Wat zijn mijn vakken?"*
 
 ## Tools (28)
 
