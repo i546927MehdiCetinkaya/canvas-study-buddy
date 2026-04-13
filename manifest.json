@@ -1,22 +1,21 @@
 {
   "mcpb_version": "0.1",
-  "name": "canvas-mcp",
-  "display_name": "Canvas LMS Integration",
-  "version": "1.0.8",
-  "description": "Comprehensive Canvas LMS integration for course management, assignments, pages, students, and rubric analysis",
-  "long_description": "This extension provides full Canvas LMS integration capabilities including course management, assignment creation and grading, page editing with styleguide support, student management with privacy controls, module organization, submission tracking, and comprehensive rubric statistics analysis. Perfect for educators who want to streamline their Canvas workflows directly from Claude Desktop.",
+  "name": "canvas-study-buddy",
+  "display_name": "Canvas Study Buddy",
+  "version": "1.0.0",
+  "description": "Persoonlijke studiebegeleider voor Canvas LMS",
+  "long_description": "Canvas Study Buddy is jouw persoonlijke studiebegeleider die alles weet over je studie. Haal deadlines, cijfers, feedback en aankondigingen op across al je vakken. Krijg slimme inzichten, weekoverzichten en inhaalplannen. Gebouwd als MCP server voor Claude Desktop.",
   "author": {
-    "name": "R.Huijts",
-    "email": "r.huijts@fontys.nl",
-    "url": "https://github.com/r-huijts"
+    "name": "Mehdi Cetinkaya",
+    "url": "https://github.com/i546927MehdiCetinkaya"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/r-huijts/canvas-mcp"
+    "url": "https://github.com/i546927MehdiCetinkaya/canvas-study-buddy"
   },
-  "homepage": "https://github.com/r-huijts/canvas-mcp",
-  "documentation": "https://github.com/r-huijts/canvas-mcp/blob/main/README.md",
-  "support": "https://github.com/r-huijts/canvas-mcp/issues",
+  "homepage": "https://github.com/i546927MehdiCetinkaya/canvas-study-buddy",
+  "documentation": "https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/blob/main/README.md",
+  "support": "https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/issues",
   "icon": "icon.png",
   "server": {
     "type": "node",
@@ -34,88 +33,66 @@
     "api_token": {
       "type": "string",
       "title": "Canvas API Token",
-      "description": "Your Canvas API token. Generate this from Canvas Account > Settings > Approved Integrations > New Access Token",
+      "description": "Je Canvas API token. Maak deze aan via Canvas > Account > Instellingen > Nieuwe toegangstoken",
       "sensitive": true,
       "required": true
     },
     "base_url": {
-      "type": "string", 
+      "type": "string",
       "title": "Canvas Base URL",
-      "description": "Your Canvas instance URL (e.g., https://yourschool.instructure.com)",
+      "description": "De URL van je Canvas instelling (bijv. https://fhict.instructure.com)",
       "default": "https://fhict.instructure.com",
       "required": true
     }
   },
   "tools": [
-    {
-      "name": "list-courses",
-      "description": "List all available courses for the authenticated user"
-    },
-    {
-      "name": "list-assignments", 
-      "description": "Get assignments with submission status for students"
-    },
-    {
-      "name": "create-assignment",
-      "description": "Create new assignments in a course"
-    },
-    {
-      "name": "update-assignment", 
-      "description": "Update existing assignments"
-    },
-    {
-      "name": "list-students",
-      "description": "Get course enrollment with privacy controls"
-    },
-    {
-      "name": "generate-styleguide",
-      "description": "🎨 Create comprehensive Canvas page formatting standards"
-    },
-    {
-      "name": "update-page-content",
-      "description": "Create or update course pages with styleguide compliance"
-    },
-    {
-      "name": "patch-page-content", 
-      "description": "Smart editing of existing pages using natural language"
-    },
-    {
-      "name": "get-rubric-statistics",
-      "description": "Comprehensive rubric analysis with score distributions"
-    },
-    {
-      "name": "list-assignment-submissions",
-      "description": "Track student submission status and comments"
-    },
-    {
-      "name": "grade-submission",
-      "description": "Grade student work with scores and feedback"
-    },
-    {
-      "name": "list-modules",
-      "description": "Course module management and organization"
-    },
-    {
-      "name": "list-sections", 
-      "description": "Course section management"
-    },
-    {
-      "name": "post-announcement",
-      "description": "Post course announcements"
-    }
+    { "name": "get-all-courses", "description": "Alle vakken inclusief afgeronde, met metadata" },
+    { "name": "get-course-overview", "description": "Compleet overzicht van een vak in een call" },
+    { "name": "get-course-syllabus", "description": "Syllabus inhoud van een vak" },
+    { "name": "get-course-files", "description": "Alle bestanden, filterbaar op type" },
+    { "name": "get-course-people", "description": "Docenten en medestudenten van een vak" },
+    { "name": "get-upcoming-deadlines", "description": "Aankomende deadlines across alle vakken" },
+    { "name": "get-missed-deadlines", "description": "Gemiste of te late deadlines" },
+    { "name": "get-submission-status", "description": "Per vak: wat ingeleverd, open, te laat" },
+    { "name": "get-assignment-details", "description": "Volledige opdracht met rubric en requirements" },
+    { "name": "get-assignment-rubric", "description": "Rubric criteria van een opdracht" },
+    { "name": "get-my-grades", "description": "Cijfers per vak met individuele scores" },
+    { "name": "get-assignment-feedback", "description": "Feedback van docent op een opdracht" },
+    { "name": "get-all-feedback", "description": "Alle feedback across alle vakken" },
+    { "name": "get-unread-feedback", "description": "Alleen nieuwe, onverwerkte feedback" },
+    { "name": "get-rubric-scores", "description": "Per criterium scores op ingeleverd werk" },
+    { "name": "get-page-content", "description": "Pagina inhoud ophalen" },
+    { "name": "search-all-content", "description": "Zoeken door alles: paginas, modules, opdrachten, bestanden" },
+    { "name": "get-module-content", "description": "Alle content van een module inclusief pagina-inhoud" },
+    { "name": "get-recent-updates", "description": "Wat is er recent aangepast op Canvas" },
+    { "name": "get-course-announcements", "description": "Aankondigingen per vak" },
+    { "name": "get-all-announcements", "description": "Alle aankondigingen across alle vakken" },
+    { "name": "get-unread-announcements", "description": "Alleen ongelezen aankondigingen" },
+    { "name": "get-inbox-messages", "description": "Canvas inbox berichten" },
+    { "name": "get-discussion-posts", "description": "Discussie posts van een vak" },
+    { "name": "get-study-progress", "description": "Studievoortgang per vak met visuele balk" },
+    { "name": "get-course-calendar", "description": "Kalender events en deadlines" },
+    { "name": "get-quiz-results", "description": "Resultaten van gemaakte quizzen" },
+    { "name": "get-learning-outcomes", "description": "Leerdoelen per vak" }
   ],
   "prompts": [
-    {
-      "name": "analyze-rubric-statistics",
-      "description": "Comprehensive rubric analysis with visualizations for formative assessments",
-      "arguments": ["courseName"],
-      "text": "Please analyze the rubric statistics for the course \"{courseName}\". Follow these steps:\n\n1. First, use the list-courses tool to find the course ID for \"{courseName}\".\n\n2. Then, use the list-assignments tool to get all assignments for this course.\n\n3. For each formative assignment that has a due date before today:\n   - Use the get-rubric-statistics tool to get detailed statistics\n   - Include the point distribution to create visualizations\n   - Skip assignments with future due dates\n\n4. Create and analyze two comprehensive visualizations that show all assignments together:\n   a) Grouped Stacked Bar Chart:\n      - X-axis: Criteria names\n      - Y-axis: Percentage of students\n      - Groups: One group of stacked bars per assignment\n      - Bars: Stacked to show score distribution (0-4 points)\n      - Colors: Consistent colors across assignments for each point value\n      - Legend: Include both assignment names and point values\n      \n   b) Grouped Bar Chart:\n      - X-axis: Criteria names\n      - Y-axis: Average score\n      - Groups: One bar per assignment for each criterion\n      - Colors: Different color for each assignment\n      - Include error bars showing standard deviation if available\n\n5. Provide a summary of key insights based on:\n   - Score distributions across criteria and assignments\n   - Progression or patterns between assignments\n   - Common areas of strength or difficulty across assignments\n   - Notable trends or changes between assignments\n   - Specific criteria that show consistent or varying performance\n\nPlease ensure all visualizations are clearly labeled with:\n- Descriptive title (including analysis date)\n- Axis labels\n- Legend showing assignments and score levels\n- Clear distinction between assignments\n- Percentage or count indicators where appropriate"
-    }
+    { "name": "morning-briefing", "description": "Dagelijkse start briefing" },
+    { "name": "get-todo", "description": "Volledige todo lijst op urgentie" },
+    { "name": "week-overview", "description": "Weekoverzicht met planning" },
+    { "name": "vak-deep-dive", "description": "Compleet overzicht van een vak", "arguments": ["vaknaam"] },
+    { "name": "assignment-briefing", "description": "Alles over een opdracht", "arguments": ["opdrachtnaam"] },
+    { "name": "check-feedback", "description": "Feedback analyse met patronen" },
+    { "name": "study-gap-analysis", "description": "Wat heb je gemist?" },
+    { "name": "monday-morning", "description": "Weekstart planning" },
+    { "name": "deadline-pressure", "description": "Deadline druk analyse" },
+    { "name": "end-of-week", "description": "Weekafsluiting" },
+    { "name": "health-check", "description": "Studie gezondheidscheck" },
+    { "name": "catch-up-plan", "description": "Inhaalplan maken", "arguments": ["vak"] }
   ],
   "permissions": [
     {
       "type": "network",
-      "description": "Required to connect to Canvas LMS API endpoints"
+      "description": "Nodig om te verbinden met de Canvas LMS API"
     }
   ]
-} 
+}

@@ -1,10 +1,11 @@
 {
-  "name": "@r-huijts/canvas-mcp",
-  "version": "1.0.8",
+  "name": "@i546927/canvas-study-buddy",
+  "version": "1.0.0",
+  "description": "Persoonlijke studiebegeleider voor Canvas LMS - MCP Server voor Claude Desktop",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "canvas-mcp": "dist/index.js"
+    "canvas-study-buddy": "dist/index.js"
   },
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",

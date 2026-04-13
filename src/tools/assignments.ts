@@ -1,231 +1,342 @@
 import { z } from "zod";
 import { CanvasClient } from "../canvasClient.js";
+import { Assignment, Course, DeadlineWithUrgency } from "../types.js";
+import { getUrgency, daysUntil, formatDate, stripHtml } from "../helpers.js";
 
 export function registerAssignmentTools(server: any, canvas: CanvasClient) {
-  // Tool: list-assignments
+  // Tool: get-upcoming-deadlines - alle deadlines across alle vakken
   server.tool(
-    "list-assignments",
-    "Get a list of all assignments in a course with submission status for students",
+    "get-upcoming-deadlines",
+    "Haal aankomende deadlines op across alle vakken, gesorteerd op datum met urgentie-indicatie",
     {
-      courseId: z.string().describe("The ID of the course"),
-      studentId: z.string().optional().describe("Optional: Get submission status for a specific student"),
-      includeSubmissionHistory: z.boolean().default(false).describe("Whether to include submission history details"),
-      anonymous: z.boolean().default(true).describe("Whether to anonymize student names and emails in submission data (default: true for privacy)")
+      days: z.number().default(14).describe("Aantal dagen vooruit kijken (standaard 14)")
     },
-    async ({ courseId, studentId, includeSubmissionHistory = false, anonymous = true }: { courseId: string; studentId?: string; includeSubmissionHistory?: boolean; anonymous?: boolean }) => {
-      let assignments: any[] = [];
-      let page = 1;
-      let hasMore = true;
+    async ({ days = 14 }: { days?: number }) => {
       try {
-        while (hasMore) {
-          const params: any = {
-            per_page: 100,
-            page: page,
-            include: studentId ? ['submission', 'submission_comments', 'submission_history'] : [],
-            student_ids: studentId ? [studentId] : undefined,
-            order_by: 'position',
+        // Haal alle actieve vakken op
+        const courses = await canvas.fetchAllPages<Course>('/api/v1/courses', {
+          enrollment_state: 'active',
+          state: ['available']
+        });
+
+        const now = new Date();
+        const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+        const allDeadlines: DeadlineWithUrgency[] = [];
+
+        // Haal assignments per vak op (parallel, max 5 tegelijk voor rate limiting)
+        const batchSize = 5;
+        for (let i = 0; i < courses.length; i += batchSize) {
+          const batch = courses.slice(i, i + batchSize);
+          const results = await Promise.all(
+            batch.map(course =>
+              canvas.fetchAllPages<Assignment>(`/api/v1/courses/${course.id}/assignments`, {
+                include: ['submission'],
+                order_by: 'due_at',
+                bucket: 'upcoming',
+                'student_ids[]': 'self'
+              }).then(assignments => ({ course, assignments }))
+               .catch(() => ({ course, assignments: [] as Assignment[] }))
+            )
+          );
+
+          for (const { course, assignments } of results) {
+            for (const assignment of assignments) {
+              if (!assignment.due_at || !assignment.published) continue;
+              const dueDate = new Date(assignment.due_at);
+              if (dueDate > futureDate) continue;
+
+              const daysLeft = daysUntil(assignment.due_at);
+              const { level, emoji } = getUrgency(daysLeft);
+
+              // Alleen tonen als nog niet ingeleverd
+              const sub = assignment.submission;
+              if (sub && sub.workflow_state !== 'unsubmitted') continue;
+
+              allDeadlines.push({
+                assignment,
+                courseName: course.name,
+                courseId: course.id,
+                urgency: level,
+                urgencyEmoji: emoji,
+                daysUntilDue: daysLeft
+              });
+            }
+          }
+        }
+
+        // Sorteer op datum (eerst meest urgent)
+        allDeadlines.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+
+        if (allDeadlines.length === 0) {
+          return {
+            content: [{ type: "text", text: `\u{2705} Geen openstaande deadlines in de komende ${days} dagen!` }]
           };
-          const pageAssignments = (await canvas.listCourseAssignments(courseId, params, { anonymous }) as any[]);
-          assignments.push(...pageAssignments);
-          hasMore = pageAssignments.length === 100;
-          page += 1;
         }
-        const formattedAssignments = assignments
-          .map(assignment => {
-            const parts = [
-              `Assignment: ${assignment.name}`,
-              `ID: ${assignment.id}`,
-              `Due Date: ${assignment.due_at || 'No due date'}`,
-              `Points Possible: ${assignment.points_possible}`,
-              `Status: ${assignment.published ? 'Published' : 'Unpublished'}`
-            ];
-            if (assignment.submission) {
-              parts.push('Submission:');
-              parts.push(`  Status: ${assignment.submission.workflow_state}`);
-              parts.push(`  Submitted: ${assignment.submission.submitted_at || 'Not submitted'}`);
-              if (assignment.submission.score !== undefined) {
-                parts.push(`  Score: ${assignment.submission.score}`);
+
+        const formatted = allDeadlines.map(d => {
+          const daysText = d.daysUntilDue < 0
+            ? `${Math.abs(d.daysUntilDue)} dagen te laat!`
+            : d.daysUntilDue === 0
+              ? 'Vandaag!'
+              : d.daysUntilDue === 1
+                ? 'Morgen'
+                : `${d.daysUntilDue} dagen`;
+          return `${d.urgencyEmoji} ${d.assignment.name}\n  Vak: ${d.courseName}\n  Deadline: ${formatDate(d.assignment.due_at)} (${daysText})\n  Punten: ${d.assignment.points_possible || 'Niet bekend'}`;
+        }).join('\n\n');
+
+        return {
+          content: [{ type: "text", text: `\u{1F4C5} Aankomende deadlines (${allDeadlines.length}):\n\n${formatted}\n\nWat wil je als eerste aanpakken?` }]
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(`Kon deadlines niet ophalen: ${error.message}`);
+        }
+        throw new Error('Kon deadlines niet ophalen: Onbekende fout');
+      }
+    }
+  );
+
+  // Tool: get-missed-deadlines - te laat of niet ingeleverd
+  server.tool(
+    "get-missed-deadlines",
+    "Haal gemiste deadlines op: opdrachten die te laat of niet ingeleverd zijn",
+    {},
+    async () => {
+      try {
+        const courses = await canvas.fetchAllPages<Course>('/api/v1/courses', {
+          enrollment_state: 'active',
+          state: ['available']
+        });
+
+        const missed: Array<{ assignment: Assignment; courseName: string }> = [];
+
+        const batchSize = 5;
+        for (let i = 0; i < courses.length; i += batchSize) {
+          const batch = courses.slice(i, i + batchSize);
+          const results = await Promise.all(
+            batch.map(course =>
+              canvas.fetchAllPages<Assignment>(`/api/v1/courses/${course.id}/assignments`, {
+                include: ['submission'],
+                bucket: 'past',
+                'student_ids[]': 'self'
+              }).then(assignments => ({ course, assignments }))
+               .catch(() => ({ course, assignments: [] as Assignment[] }))
+            )
+          );
+
+          for (const { course, assignments } of results) {
+            for (const assignment of assignments) {
+              if (!assignment.published || !assignment.due_at) continue;
+              const sub = assignment.submission;
+              // Gemist = deadline verstreken en niet/te laat ingeleverd
+              if (sub && (sub.missing || sub.late || sub.workflow_state === 'unsubmitted')) {
+                missed.push({ assignment, courseName: course.name });
               }
-              if (assignment.submission.submission_comments?.length > 0) {
-                parts.push('  Teacher Comments:');
-                assignment.submission.submission_comments
-                  .filter((comment: any) => comment.author?.role === 'teacher')
-                  .forEach((comment: any) => {
-                    const date = new Date(comment.created_at).toLocaleString();
-                    parts.push(`    [${date}] ${comment.comment}`);
-                  });
-              } else {
-                parts.push('  Teacher Comments: None');
-              }
-              if (includeSubmissionHistory && assignment.submission.versioned_submissions?.length > 0) {
-                parts.push('  Submission History:');
-                assignment.submission.versioned_submissions
-                  .sort((a: any, b: any) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime())
-                  .forEach((version: any, index: number) => {
-                    const date = new Date(version.submitted_at).toLocaleString();
-                    parts.push(`    Attempt ${index + 1} [${date}]:`);
-                    if (version.score !== undefined) {
-                      parts.push(`      Score: ${version.score}`);
-                    }
-                    if (version.grade) {
-                      parts.push(`      Grade: ${version.grade}`);
-                    }
-                    if (version.submission_type) {
-                      parts.push(`      Type: ${version.submission_type}`);
-                    }
-                  });
-              }
-            } else {
-              parts.push('Submission: No submission data available');
             }
-            return parts.join('\n');
+          }
+        }
+
+        if (missed.length === 0) {
+          return {
+            content: [{ type: "text", text: "\u{2705} Geen gemiste deadlines! Goed bezig!" }]
+          };
+        }
+
+        const formatted = missed.map(m => {
+          const sub = m.assignment.submission;
+          const status = sub?.late ? 'Te laat ingeleverd' : 'Niet ingeleverd';
+          return `\u{1F534} ${m.assignment.name}\n  Vak: ${m.courseName}\n  Deadline was: ${formatDate(m.assignment.due_at)}\n  Status: ${status}`;
+        }).join('\n\n');
+
+        return {
+          content: [{ type: "text", text: `\u{26A0}\u{FE0F} Gemiste deadlines (${missed.length}):\n\n${formatted}\n\nWat wil je als eerste aanpakken?` }]
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(`Kon gemiste deadlines niet ophalen: ${error.message}`);
+        }
+        throw new Error('Kon gemiste deadlines niet ophalen: Onbekende fout');
+      }
+    }
+  );
+
+  // Tool: get-submission-status - per vak wat ingeleverd, open, te laat
+  server.tool(
+    "get-submission-status",
+    "Bekijk per vak de submission status: wat is ingeleverd, wat staat open, wat is te laat",
+    {
+      courseId: z.string().describe("Het ID van het vak")
+    },
+    async ({ courseId }: { courseId: string }) => {
+      try {
+        const [course, assignments] = await Promise.all([
+          canvas.getCourse(courseId) as Promise<Course>,
+          canvas.fetchAllPages<Assignment>(`/api/v1/courses/${courseId}/assignments`, {
+            include: ['submission'],
+            'student_ids[]': 'self'
           })
-          .join('\n---\n');
-        return {
-          content: [
-            {
-              type: "text",
-              text: assignments.length > 0
-                ? `Assignments in course ${courseId}:\n\n${formattedAssignments}\n\nTotal assignments: ${assignments.length}`
-                : "No assignments found in this course.",
-            },
-          ],
-        };
-      } catch (error: any) {
-        if (error instanceof Error) {
-          throw new Error(`Failed to fetch assignments: ${error.message}`);
+        ]);
+
+        const submitted: Assignment[] = [];
+        const open: Assignment[] = [];
+        const late: Assignment[] = [];
+        const graded: Assignment[] = [];
+
+        for (const a of assignments) {
+          if (!a.published) continue;
+          const sub = a.submission;
+          if (!sub || sub.workflow_state === 'unsubmitted') {
+            if (a.due_at && new Date(a.due_at) < new Date()) {
+              late.push(a);
+            } else {
+              open.push(a);
+            }
+          } else if (sub.grade) {
+            graded.push(a);
+          } else {
+            submitted.push(a);
+          }
         }
-        throw new Error('Failed to fetch assignments: Unknown error');
+
+        const parts: string[] = [`\u{1F4CA} Submission status voor ${course.name}:\n`];
+
+        parts.push(`\u{2705} Beoordeeld: ${graded.length}`);
+        graded.forEach(a => parts.push(`  - ${a.name}: ${a.submission?.grade} (${a.submission?.score}/${a.points_possible})`));
+
+        parts.push(`\n\u{1F4E4} Ingeleverd (wacht op beoordeling): ${submitted.length}`);
+        submitted.forEach(a => parts.push(`  - ${a.name}`));
+
+        parts.push(`\n\u{1F7E1} Open: ${open.length}`);
+        open.forEach(a => parts.push(`  - ${a.name} (deadline: ${formatDate(a.due_at)})`));
+
+        parts.push(`\n\u{1F534} Te laat / niet ingeleverd: ${late.length}`);
+        late.forEach(a => parts.push(`  - ${a.name} (deadline was: ${formatDate(a.due_at)})`));
+
+        return {
+          content: [{ type: "text", text: parts.join('\n') }]
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(`Kon submission status niet ophalen: ${error.message}`);
+        }
+        throw new Error('Kon submission status niet ophalen: Onbekende fout');
       }
     }
   );
 
-  // Tool: get-assignment
+  // Tool: get-assignment-details - volledige opdracht info
   server.tool(
-    "get-assignment",
-    "Fetch metadata for a single assignment (due date, points, rubric, submission types, etc).",
+    "get-assignment-details",
+    "Haal volledige details op van een opdracht: beschrijving, rubric, deadlines, submission requirements",
     {
-      courseId: z.string().describe("The ID of the course"),
-      assignmentId: z.string().describe("The ID of the assignment")
+      courseId: z.string().describe("Het ID van het vak"),
+      assignmentId: z.string().describe("Het ID van de opdracht")
     },
     async ({ courseId, assignmentId }: { courseId: string; assignmentId: string }) => {
       try {
-        const response = await canvas.getAssignment(courseId, assignmentId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2)
-            }
-          ]
-        };
-      } catch (error: any) {
-        if (error instanceof Error) {
-          throw new Error(`Failed to fetch assignment: ${error.message}`);
+        const assignment = await canvas.getAssignment(courseId, assignmentId, {
+          include: ['submission', 'rubric_assessment']
+        }) as Assignment;
+
+        const parts: string[] = [];
+        parts.push(`\u{1F4DD} ${assignment.name}`);
+        parts.push(`Vak ID: ${courseId}`);
+        parts.push(`Punten: ${assignment.points_possible || 'Niet bekend'}`);
+        parts.push(`Deadline: ${formatDate(assignment.due_at)}`);
+
+        if (assignment.lock_at) parts.push(`Sluit: ${formatDate(assignment.lock_at)}`);
+        if (assignment.unlock_at) parts.push(`Opent: ${formatDate(assignment.unlock_at)}`);
+
+        parts.push(`Inlevertype: ${assignment.submission_types?.join(', ') || 'Niet gespecificeerd'}`);
+        parts.push(`Beoordelingstype: ${assignment.grading_type || 'Niet gespecificeerd'}`);
+
+        // Beschrijving
+        if (assignment.description) {
+          parts.push(`\nBeschrijving:\n${stripHtml(assignment.description)}`);
         }
-        throw new Error('Failed to fetch assignment: Unknown error');
+
+        // Rubric
+        if (assignment.rubric && assignment.rubric.length > 0) {
+          parts.push('\n\u{1F4CB} Rubric:');
+          for (const criterion of assignment.rubric) {
+            parts.push(`\n  ${criterion.description} (${criterion.points} punten)`);
+            if (criterion.long_description) {
+              parts.push(`  ${criterion.long_description}`);
+            }
+            if (criterion.ratings) {
+              for (const rating of criterion.ratings) {
+                parts.push(`    - ${rating.description}: ${rating.points} punten`);
+              }
+            }
+          }
+        }
+
+        // Submission status
+        const sub = assignment.submission;
+        if (sub) {
+          parts.push(`\nJouw submission:`);
+          parts.push(`  Status: ${sub.workflow_state}`);
+          if (sub.submitted_at) parts.push(`  Ingeleverd: ${formatDate(sub.submitted_at)}`);
+          if (sub.grade) parts.push(`  Cijfer: ${sub.grade} (${sub.score}/${assignment.points_possible})`);
+          if (sub.late) parts.push(`  \u{26A0}\u{FE0F} Te laat ingeleverd`);
+        }
+
+        parts.push(`\nLink: ${assignment.html_url}`);
+
+        return {
+          content: [{ type: "text", text: parts.join('\n') }]
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(`Kon opdracht details niet ophalen: ${error.message}`);
+        }
+        throw new Error('Kon opdracht details niet ophalen: Onbekende fout');
       }
     }
   );
 
-  // Tool: create-assignment
+  // Tool: get-assignment-rubric - rubric van een opdracht
   server.tool(
-    "create-assignment",
-    "Create a new assignment in a course. All fields are optional except courseId.",
+    "get-assignment-rubric",
+    "Haal de rubric criteria op van een opdracht",
     {
-      courseId: z.string().describe("The ID of the course"),
-      name: z.string().optional(),
-      description: z.string().optional(),
-      due_at: z.string().optional(),
-      points_possible: z.number().optional(),
-      submission_types: z.array(z.string()).optional(),
-      published: z.boolean().optional(),
-      grading_type: z.string().optional(),
-      assignment_group_id: z.number().optional(),
-    },
-    async (args: any) => {
-      const { courseId, ...fields } = args;
-      try {
-        const response = await canvas.createAssignment(courseId, { assignment: fields });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2)
-            }
-          ]
-        };
-      } catch (error: any) {
-        if (error instanceof Error) {
-          throw new Error(`Failed to create assignment: ${error.message}`);
-        }
-        throw new Error('Failed to create assignment: Unknown error');
-      }
-    }
-  );
-
-  // Tool: update-assignment
-  server.tool(
-    "update-assignment",
-    "Update an assignment. All fields are optional except courseId and assignmentId.",
-    {
-      courseId: z.string().describe("The ID of the course"),
-      assignmentId: z.string().describe("The ID of the assignment"),
-      name: z.string().optional(),
-      description: z.string().optional(),
-      due_at: z.string().optional(),
-      points_possible: z.number().optional(),
-      submission_types: z.array(z.string()).optional(),
-      published: z.boolean().optional(),
-      grading_type: z.string().optional(),
-      assignment_group_id: z.number().optional(),
-    },
-    async (args: any) => {
-      const { courseId, assignmentId, ...fields } = args;
-      try {
-        const response = await canvas.updateAssignment(courseId, assignmentId, { assignment: fields });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2)
-            }
-          ]
-        };
-      } catch (error: any) {
-        if (error instanceof Error) {
-          throw new Error(`Failed to update assignment: ${error.message}`);
-        }
-        throw new Error('Failed to update assignment: Unknown error');
-      }
-    }
-  );
-
-  // Tool: delete-assignment
-  server.tool(
-    "delete-assignment",
-    "Delete (archive) an assignment from a course.",
-    {
-      courseId: z.string().describe("The ID of the course"),
-      assignmentId: z.string().describe("The ID of the assignment")
+      courseId: z.string().describe("Het ID van het vak"),
+      assignmentId: z.string().describe("Het ID van de opdracht")
     },
     async ({ courseId, assignmentId }: { courseId: string; assignmentId: string }) => {
       try {
-        const response = await canvas.delete(`/api/v1/courses/${courseId}/assignments/${assignmentId}`);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2)
-            }
-          ]
-        };
-      } catch (error: any) {
-        if (error instanceof Error) {
-          throw new Error(`Failed to delete assignment: ${error.message}`);
+        const assignment = await canvas.getAssignment(courseId, assignmentId) as Assignment;
+
+        if (!assignment.rubric || assignment.rubric.length === 0) {
+          return {
+            content: [{ type: "text", text: `Geen rubric gevonden voor "${assignment.name}".` }]
+          };
         }
-        throw new Error('Failed to delete assignment: Unknown error');
+
+        const parts: string[] = [`\u{1F4CB} Rubric voor "${assignment.name}" (${assignment.points_possible} punten):\n`];
+
+        for (const criterion of assignment.rubric) {
+          parts.push(`\u{1F539} ${criterion.description} (max ${criterion.points} punten)`);
+          if (criterion.long_description) {
+            parts.push(`  ${criterion.long_description}`);
+          }
+          if (criterion.ratings) {
+            for (const rating of criterion.ratings) {
+              parts.push(`  ${rating.points}pt - ${rating.description}${rating.long_description ? ': ' + rating.long_description : ''}`);
+            }
+          }
+          parts.push('');
+        }
+
+        return {
+          content: [{ type: "text", text: parts.join('\n') }]
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(`Kon rubric niet ophalen: ${error.message}`);
+        }
+        throw new Error('Kon rubric niet ophalen: Onbekende fout');
       }
     }
   );
-} 
+}

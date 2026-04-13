@@ -1,623 +1,221 @@
-# Canvas MCP Server
+# Canvas Study Buddy
 
-A Model Context Protocol (MCP) server that enables AI assistants like Claude to interact with Canvas LMS. This server provides tools for managing courses, announcements, rubrics, assignments, modules, pages, and student data through the Canvas API.
+Jouw persoonlijke studiebegeleider voor Canvas LMS. Een MCP server voor Claude Desktop die alles weet over je studie en slimme verbanden legt tussen je vakken, deadlines, cijfers en feedback.
 
-**🚀 Now available as a Claude Desktop Extension for one-click installation!**
+Geforkt van [r-huijts/canvas-mcp](https://github.com/r-huijts/canvas-mcp) en omgebouwd van docent-gerichte tools naar een volwaardige student Study Buddy.
 
-## Features
+## Installatie (One-Click)
 
-- List active courses and their details
-- Post announcements to courses
-- View course rubrics
-- Get student enrollment information
-- Access assignment details and submissions
-- View student submission history and comments
-- Analyze rubric statistics
-- **Manage course modules and module items**
-- **Manage course pages, including content, revisions, and rollbacks**
-- **Manage quizzes, including questions and question groups**
+1. Download `canvas-study-buddy-x.x.x.dxt` uit de [laatste release](https://github.com/i546927MehdiCetinkaya/canvas-study-buddy/releases)
+2. Dubbelklik het .dxt bestand
+3. Klik **Install** in Claude Desktop
+4. Vul je Canvas API token in via de UI
+5. Klaar!
 
-## Desktop Extension Benefits 🎯
+## Installatie (Handmatig)
 
-The Canvas MCP server is now available as a **Claude Desktop Extension** for the ultimate user experience:
+### Vereisten
+- Node.js 20+
+- npm
+- Een Canvas API token
 
-- **🎯 One-Click Installation**: No terminal commands, no manual configuration
-- **🔒 Secure Configuration**: API tokens stored securely in your OS keychain
-- **🔄 Automatic Updates**: Get new features and fixes automatically
-- **📦 Zero Dependencies**: Everything bundled - no Node.js installation required
-- **🌍 Cross-Platform**: Works seamlessly on macOS and Windows
-- **🎨 Native UI**: Configure settings through Claude Desktop's beautiful interface
-
-Perfect for educators who want powerful Canvas integration without the technical complexity!
-
-## Student Data Privacy & Anonymization 🔒
-
-This Canvas MCP server includes **privacy-first anonymization** for student data. By default, all student names and emails are anonymized to protect privacy, but you can request real data when needed using natural language.
-
-### How It Works
-
-**Default Behavior (Anonymous):**
-- Student names become: `Student 1`, `Student 2`, etc.
-- Student emails become: `student1@example.com`, `student2@example.com`
-- Same student always gets the same pseudonym across all API calls
-- Teacher/admin names are **never anonymized** (preserved in comments)
-
-**Natural Language Control:**
-You can easily switch to real data by asking for it naturally:
-
-```
-❌ Anonymous (default):
-"List all students in course 123"
-→ Returns: Student 1, Student 2, student1@example.com
-
-✅ Non-anonymous:
-"List all students in course 123, but show their actual names and emails"
-"Get assignment submissions with real student names"  
-"Show me student data with actual identities"
-→ Returns: John Smith, Jane Doe, john.smith@university.edu
-```
-
-### Affected Tools
-
-The following tools support anonymization control:
-- `list-students` - Student enrollment data
-- `list-assignments` - When including student submission data  
-- `list-assignment-submissions` - All submission data
-- `list-section-submissions` - Section-filtered submissions
-- `list-rubric-assessments` - Rubric assessment data
-
-### Privacy Features
-
-🔒 **Privacy by Default**: All student data is anonymized unless explicitly requested otherwise  
-🗣️ **Natural Language**: Just ask for "actual names" when you need them  
-👨‍🏫 **Teacher Protection**: Teacher/admin names are never anonymized  
-🔄 **Consistent Mapping**: Same student gets same pseudonym across all calls  
-🎯 **Selective**: Only anonymizes student data, preserves all other information  
-
-### Why Teachers/Admins Aren't Anonymized
-
-The anonymization system specifically targets **student privacy** while preserving educational context:
-
-**🎓 Educational Rationale:**
-- **Students are the protected population** - They're the vulnerable party whose privacy needs protection
-- **Teacher feedback context matters** - Knowing which instructor provided feedback is pedagogically valuable
-- **Staff accountability** - Teachers and admins are professional staff, not students requiring privacy protection
-
-**📝 Practical Examples:**
-```
-Assignment Comments (with anonymization enabled):
-✅ "Excellent analysis of the data trends! - Prof. Johnson"
-❌ "I found this section confusing - Student 1" 
-❌ "Thanks for the feedback! - Student 2"
-```
-
-**🔍 Technical Implementation:**
-- Comments include an `author.role` field (`'student'`, `'teacher'`, `'admin'`, `'ta'`)
-- Only authors with `role === 'student'` get anonymized
-- Staff roles preserve real names for educational context
-
-This design ensures student privacy while maintaining the educational value of knowing which instructor provided specific feedback. If you need full anonymization including staff, you can modify the anonymizer logic or request this as a feature enhancement.
-
-### Technical Implementation
-
-Each tool that handles student data includes an `anonymous` parameter:
-- **Default**: `anonymous: true` (privacy-first)
-- **Override**: Claude automatically sets `anonymous: false` when you request real names
-- **Preserved**: All functional IDs and non-personal data remain unchanged
-
-Example of how Claude interprets your requests:
-- "with their actual names" → `anonymous: false`
-- "show real emails" → `anonymous: false`  
-- "anonymized" → `anonymous: true` (default anyway)
-- "hide student identities" → `anonymous: true`
-
-## Prerequisites
-
-- Node.js (v16 or higher)
-- A Canvas API token
-- Canvas instance URL (defaults to "https://fhict.instructure.com")
-
-## Installation
-
-### Option 1: Desktop Extension (Easiest) 🚀
-
-**NEW!** One-click installation with Claude Desktop Extensions:
-
-1. **Download** the latest extension: [canvas-mcp-1.0.8.mcpb](https://github.com/r-huijts/canvas-mcp/releases/latest)
-2. **Double-click** the `.mcpb` file to open with Claude Desktop
-3. **Click "Install"** - that's it!
-4. **Configure** your Canvas API token and base URL through the Claude Desktop UI
-
-**Benefits:**
-- ✅ **One-click installation** - no terminal required
-- ✅ **Automatic updates** when new versions are available
-- ✅ **Secure configuration** - API tokens stored in OS keychain
-- ✅ **No dependencies** - everything bundled in the extension
-- ✅ **Cross-platform** - works on macOS and Windows
-
-### Option 2: NPM Package (Recommended)
-
-The easiest way to use this MCP server is via npm:
+### Setup
 
 ```bash
-npm install -g @r-huijts/canvas-mcp
+git clone https://github.com/i546927MehdiCetinkaya/canvas-study-buddy.git
+cd canvas-study-buddy
+npm install
+npm run build
 ```
 
-Or use directly with npx (no installation required):
+### Configuratie
 
-```bash
-npx @r-huijts/canvas-mcp
+Maak een `.env` bestand aan:
+
+```env
+CANVAS_API_TOKEN=jouw_canvas_api_token
+CANVAS_BASE_URL=https://fhict.instructure.com
 ```
 
-### Option 3: From Source
+**Canvas API Token aanmaken:**
+1. Ga naar Canvas > Account > Instellingen
+2. Scroll naar "Goedgekeurde integraties"
+3. Klik op "+ Nieuwe toegangstoken"
+4. Kopieer het token
 
-1. Clone this repository and install dependencies:
-   ```bash
-   git clone <repository-url>
-   cd canvas-mcp
-   npm install
-   ```
+### Claude Desktop configuratie
 
-2. Create a `.env` file in the project root:
-   ```
-   CANVAS_API_TOKEN=your_canvas_api_token_here
-   CANVAS_BASE_URL=https://your-canvas-instance.instructure.com
-   ```
+Voeg dit toe aan je Claude Desktop `claude_desktop_config.json`:
 
-3. Build the TypeScript project:
-   ```bash
-   npm run build
-   ```
-
-4. Start the server:
-   ```bash
-   npm start
-   ```
-
-## Claude Desktop Integration
-
-1. Open Claude Desktop's configuration file:
-
-   **MacOS**:
-   ```bash
-   code ~/Library/Application\ Support/Claude/claude_desktop_config.json
-   ```
-
-   **Windows**:
-   ```bash
-   code %AppData%\Claude\claude_desktop_config.json
-   ```
-
-2. Add the Canvas MCP server configuration:
-
-   ### For NPM Package Installation (Recommended):
-   ```json
-   {
-     "mcpServers": {
-       "canvas": {
-         "command": "npx",
-         "args": [
-           "-y",
-           "@r-huijts/canvas-mcp"
-         ],
-         "env": {
-           "CANVAS_API_TOKEN": "your_token_here",
-           "CANVAS_BASE_URL": "https://your-canvas-instance.com"
-         }
-       }
-     }
-   }
-   ```
-
-   ### For Source Installation:
-   ```json
-   {
-     "mcpServers": {
-       "canvas": {
-         "command": "node",
-         "args": [
-           "/path/to/canvas-mcp/build/index.js"
-         ],
-         "env": {
-           "CANVAS_API_TOKEN": "your_token_here",
-           "CANVAS_BASE_URL": "https://your-canvas-instance.com"
-         }
-       }
-     }
-   }
-   ```
-
-3. Restart Claude Desktop to apply changes
-
-### Installation Notes
-
-**Benefits of NPM Package Installation:**
-- ✅ No need to clone/build source code
-- ✅ Automatic updates available via npm
-- ✅ Simpler configuration
-- ✅ Works across different operating systems
-- ✅ The `-y` flag automatically accepts package installation prompts
-
-**Troubleshooting NPX Issues:**
-- If you encounter permission issues, try running Claude Desktop as administrator (Windows) or with sudo (macOS)
-- On Windows, ensure your PATH includes npm/npx executables
-- For corporate networks, you may need to configure npm proxy settings
-
-## Available Tools
-
-### list-courses
-Lists all active courses for the authenticated user
-- No required parameters
-- Returns course names, IDs, and term information
-
-### post-announcement
-Posts an announcement to a specific course
-- Required parameters:
-  - courseId: string
-  - title: string
-  - message: string
-
-### list-rubrics
-Lists all rubrics for a specific course
-- Required parameters:
-  - courseId: string
-- Returns rubric titles, IDs, and descriptions
-
-### list-students
-Gets a complete list of students enrolled in a course
-- Required parameters:
-  - courseId: string
-- Optional parameters:
-  - includeEmail: boolean (default: false)
-  - anonymous: boolean (default: true) - Whether to anonymize student names/emails
-- Returns student names, IDs, and optional email addresses
-- **Privacy**: Student data is anonymized by default (use "with actual names" to override)
-
-### list-assignments
-Gets all assignments in a course with submission status
-- Required parameters:
-  - courseId: string
-- Optional parameters:
-  - studentId: string
-  - includeSubmissionHistory: boolean (default: false)
-  - anonymous: boolean (default: true) - Whether to anonymize student data in submissions
-- Returns assignment details and submission status
-- **Privacy**: Student submission data is anonymized by default
-
-### list-assignment-submissions
-Gets all student submissions for a specific assignment
-- Required parameters:
-  - courseId: string
-  - assignmentId: string
-- Optional parameters:
-  - anonymous: boolean (default: true) - Whether to anonymize student names/emails
-- Returns submission details, grades, and comments
-- **Privacy**: Student data is anonymized by default
-
-### list-section-submissions
-Gets all student submissions for a specific assignment filtered by section
-- Required parameters:
-  - courseId: string
-  - assignmentId: string
-  - sectionId: string
-- Optional parameters:
-  - includeComments: boolean (default: true)
-  - anonymous: boolean (default: true) - Whether to anonymize student names/emails
-- Returns submission details filtered by the specified section
-- **Privacy**: Student data is anonymized by default
-
-### list-sections
-Gets a list of all sections in a course
-- Required parameters:
-  - courseId: string
-- Optional parameters:
-  - includeStudentCount: boolean (default: false)
-- Returns section details with optional student count
-
-### post-submission-comment
-Posts a comment on a student's assignment submission
-- Required parameters:
-  - courseId: string
-  - assignmentId: string
-  - studentId: string
-  - comment: string
-- Returns confirmation of the posted comment
-
-### get-rubric-statistics
-Gets statistics for rubric assessments on an assignment
-- Required parameters:
-  - courseId: string
-  - assignmentId: string
-- Optional parameters:
-  - includePointDistribution: boolean (default: true)
-- Returns detailed statistics about rubric assessment criteria
-
-### list-modules
-Lists all modules in a course, optionally including inline items
-- Required parameters:
-  - courseId: string
-- Optional parameters:
-  - includeItems: boolean (default: false)
-- Returns module names, IDs, positions, published state, and optionally item summaries
-
-### list-module-items
-Lists all items in a specific module
-- Required parameters:
-  - courseId: string
-  - moduleId: string
-- Returns item type, title, ID, position, and published state
-
-### toggle-module-publish
-Toggles the published/unpublished state of a module
-- Required parameters:
-  - courseId: string
-  - moduleId: string
-- Returns confirmation of the new published state
-
-### list-pages
-Lists all pages in a course by URL slug
-- Required parameters:
-  - courseId: string
-- Returns page titles, URL slugs, IDs, and published state
-
-### get-page-content
-Gets the content (HTML/body) of a specific page by URL slug
-- Required parameters:
-  - courseId: string
-  - pageUrl: string (the page's URL slug, e.g. 'syllabus')
-- Returns page title, slug, ID, published state, updated date, and HTML body
-
-### update-page-content
-Updates (or creates) a page by URL slug
-- Required parameters:
-  - courseId: string
-  - pageUrl: string
-- Optional parameters:
-  - title: string
-  - body: string (HTML)
-  - editingRoles: string (comma-separated roles)
-- Returns confirmation and updated page info
-
-### list-page-revisions
-Lists all revisions for a page
-- Required parameters:
-  - courseId: string
-  - pageUrl: string
-- Returns revision IDs, timestamps, and editor info
-
-### revert-page-revision
-Reverts a page to a previous revision
-- Required parameters:
-  - courseId: string
-  - pageUrl: string
-  - revisionId: string
-- Returns confirmation and new page state
-
-### Quizzes
-
-#### list-quizzes
-Lists all quizzes in a course
-- Required parameters:
-  - courseId: string
-- Returns a list of quizzes with their details
-
-#### get-quiz
-Fetches metadata for a single quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-- Returns the full quiz object
-
-#### create-quiz
-Creates a new quiz in a course
-- Required parameters:
-  - courseId: string
-  - title: string
-- Optional parameters:
-  - description: string
-  - quiz_type: "practice_quiz" | "assignment" | "graded_survey" | "survey"
-  - due_at: string (ISO 8601 format)
-  - points_possible: number
-  - published: boolean
-- Returns the newly created quiz object
-
-#### update-quiz
-Updates an existing quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-- Optional parameters: same as create-quiz
-- Returns the updated quiz object
-
-#### delete-quiz
-Deletes a quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-- Returns confirmation of deletion
-
-#### list-quiz-questions
-Lists all questions for a quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-- Returns a list of question objects
-
-#### get-quiz-question
-Fetches a single quiz question
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - questionId: string
-- Returns the full question object
-
-#### create-quiz-question
-Creates a new question for a quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - question: object (containing question_text, question_type, points_possible, etc.)
-- Returns the newly created question object
-
-#### update-quiz-question
-Updates a quiz question
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - questionId: string
-- Optional parameters:
-  - question: object (with fields to update)
-- Returns the updated question object
-
-#### delete-quiz-question
-Deletes a quiz question
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - questionId: string
-- Returns confirmation of deletion
-
-#### list-quiz-question-groups
-Lists all question groups for a quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-- Returns a list of question group objects
-
-#### get-quiz-question-group
-Fetches a single quiz question group
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - groupId: string
-- Returns the full question group object
-
-#### create-quiz-question-group
-Creates a new question group for a quiz
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - quizGroup: object (containing name, pick_count, question_points)
-- Returns the newly created question group object
-
-#### update-quiz-question-group
-Updates a quiz question group
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - groupId: string
-- Optional parameters:
-  - quizGroup: object (with fields to update)
-- Returns the updated question group object
-
-#### delete-quiz-question-group
-Deletes a quiz question group
-- Required parameters:
-  - courseId: string
-  - quizId: string
-  - groupId: string
-- Returns confirmation of deletion
-
-## Available Prompts
-
-### analyze-rubric-statistics
-Analyzes rubric statistics for formative assignments in a course and creates visualizations
-- Required parameters:
-  - courseName: string (The name of the course to analyze)
-- Creates two comprehensive visualizations:
-  1. Grouped stacked bar chart showing score distribution per criterion across all assignments
-  2. Grouped bar chart showing average scores per criterion for all assignments
-- Provides comparative analysis across assignments and criteria
-- Includes progression analysis and trend identification
-
-## Troubleshooting
-
-### Common Issues
-
-1. Server not appearing in Claude Desktop:
-   - Verify configuration file syntax
-   - Check file paths are absolute
-   - Ensure Canvas API token is valid
-   - Restart Claude Desktop
-
-2. Connection errors:
-   - Check Canvas API token permissions
-   - Verify Canvas instance is accessible
-   - Review Claude's MCP logs:
-     ```bash
-     # MacOS
-     tail -f ~/Library/Logs/Claude/mcp*.log
-     # Windows
-     type %AppData%\Claude\Logs\mcp*.log
-     ```
-
-### Debug Logging
-The server logs errors to stderr. These can be viewed in Claude Desktop's logs or redirected when running manually:
-```bash
-node build/index.js 2> debug.log
-```
-
-## Development
-
-This MCP server uses the latest Model Context Protocol TypeScript SDK (v1.11.3+) with the new tool registration pattern. Each tool is registered with the server using the `server.tool()` method, which takes the following parameters:
-
-1. Tool name (string)
-2. Tool description (string)
-3. Input schema (Zod schema or plain object)
-4. Execute function (async function that implements the tool logic)
-
-Here's an example of how a tool is registered:
-
-```typescript
-server.tool(
-  "list-courses",
-  "List all courses for the authenticated user",
-  {},
-  async () => {
-    // Tool implementation...
-    return {
-      content: [
-        {
-          type: "text",
-          text: "Tool response..."
-        }
-      ]
-    };
+```json
+{
+  "mcpServers": {
+    "canvas-study-buddy": {
+      "command": "node",
+      "args": ["/pad/naar/canvas-study-buddy/dist/index.js"],
+      "env": {
+        "CANVAS_API_TOKEN": "jouw_canvas_api_token",
+        "CANVAS_BASE_URL": "https://fhict.instructure.com"
+      }
+    }
   }
-);
+}
 ```
 
-## Security Notes
+## Tools (28)
 
-1. API Token Security:
-   - Never commit your Canvas API token to version control
-   - Use environment variables or secure configuration
-   - Regularly rotate your API tokens
-   
-2. Permissions:
-   - Use tokens with minimum required permissions
-   - Review Canvas API access logs periodically
+### Cursussen & Structuur
+| Tool | Beschrijving |
+|------|-------------|
+| `get-all-courses` | Alle vakken inclusief afgeronde, met metadata |
+| `get-course-overview` | Compleet vakoverzicht in een call |
+| `get-course-syllabus` | Syllabus inhoud van een vak |
+| `get-course-files` | Bestanden, filterbaar op type (pdf, docx, etc) |
+| `get-course-people` | Docenten en medestudenten |
 
-## License
+### Opdrachten & Deadlines
+| Tool | Beschrijving |
+|------|-------------|
+| `get-upcoming-deadlines` | Deadlines across alle vakken, gesorteerd op urgentie |
+| `get-missed-deadlines` | Gemiste of te late deadlines |
+| `get-submission-status` | Per vak: wat ingeleverd, open, te laat |
+| `get-assignment-details` | Volledige opdracht met rubric en requirements |
+| `get-assignment-rubric` | Rubric criteria van een opdracht |
 
-MIT License
+### Cijfers & Feedback
+| Tool | Beschrijving |
+|------|-------------|
+| `get-my-grades` | Cijfers per vak met individuele scores |
+| `get-assignment-feedback` | Feedback van docent op een opdracht |
+| `get-all-feedback` | Alle feedback across alle vakken |
+| `get-unread-feedback` | Alleen nieuwe, onverwerkte feedback |
+| `get-rubric-scores` | Per criterium scores met visuele balk |
 
-Copyright (c) 2024
+### Content & Pagina's
+| Tool | Beschrijving |
+|------|-------------|
+| `get-page-content` | Pagina inhoud ophalen |
+| `search-all-content` | Zoeken door alles: pagina's, modules, opdrachten, bestanden |
+| `get-module-content` | Alle content van een module inclusief pagina-inhoud |
+| `get-recent-updates` | Wat is er recent aangepast op Canvas |
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+### Aankondigingen & Communicatie
+| Tool | Beschrijving |
+|------|-------------|
+| `get-course-announcements` | Aankondigingen per vak |
+| `get-all-announcements` | Alle aankondigingen across alle vakken |
+| `get-unread-announcements` | Alleen ongelezen aankondigingen |
+| `get-inbox-messages` | Canvas inbox berichten |
+| `get-discussion-posts` | Discussie posts van een vak |
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+### Planning & Voortgang
+| Tool | Beschrijving |
+|------|-------------|
+| `get-study-progress` | Voortgang per vak met visuele balk |
+| `get-course-calendar` | Kalender events en deadlines |
+| `get-quiz-results` | Resultaten van gemaakte quizzen |
+| `get-learning-outcomes` | Leerdoelen per vak |
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Slimme Prompts (12)
+
+### Dagelijks gebruik
+| Prompt | Beschrijving |
+|--------|-------------|
+| `morning-briefing` | Dagelijkse start: aankondigingen, deadlines, feedback |
+| `get-todo` | Volledige todo lijst gesorteerd op urgentie |
+| `week-overview` | Weekoverzicht met planning en werklast |
+
+### Studie hulp
+| Prompt | Beschrijving |
+|--------|-------------|
+| `vak-deep-dive` | Alles van een vak: syllabus, modules, opdrachten, cijfers |
+| `assignment-briefing` | Alles over een opdracht: rubric, deadline, tips |
+| `check-feedback` | Feedback analyse: patronen, verbeterpunten, sterke punten |
+| `study-gap-analysis` | Wat heb je gemist? Modules, opdrachten, content |
+
+### Planning
+| Prompt | Beschrijving |
+|--------|-------------|
+| `monday-morning` | Weekstart planning met prioriteiten |
+| `deadline-pressure` | Deadline druk analyse met tijdverdeling |
+| `end-of-week` | Weekafsluiting: gedaan, open, volgende week |
+
+### Proactief
+| Prompt | Beschrijving |
+|--------|-------------|
+| `health-check` | Studie gezondheidscheck: achterstand, dalende cijfers |
+| `catch-up-plan` | Inhaalplan voor een vak of alle vakken |
+
+## Urgentie systeem
+
+Deadlines worden automatisch gemarkeerd met urgentie:
+
+- :red_circle: **Kritiek**: deadline < 24 uur of gemist
+- :orange_circle: **Urgent**: deadline < 3 dagen
+- :yellow_circle: **Let op**: deadline < 7 dagen
+- :green_circle: **Ok**: deadline > 7 dagen
+
+## Voorbeeldvragen
+
+Stel deze vragen aan Claude met de Study Buddy actief:
+
+- "Wat zijn mijn deadlines deze week?"
+- "Geef me een overzicht van het vak Cyber Security"
+- "Welke feedback heb ik recent gekregen?"
+- "Waar loop ik achter?"
+- "Maak een inhaalplan voor Software Engineering"
+- "Wat moet ik vandaag doen?"
+- "Zoek naar 'machine learning' in al mijn vakken"
+- "Hoe sta ik ervoor met mijn cijfers?"
+
+## Roadmap
+
+### Multi-School Support
+De huidige versie is geconfigureerd voor Fontys (`fhict.instructure.com`). Toekomstige versie ondersteunt meerdere Nederlandse instellingen via een `SCHOOL` env variabele:
+
+```env
+SCHOOL=fontys
+# of
+CANVAS_BASE_URL=https://custom.instructure.com
+```
+
+Geplande presets:
+| School | URL |
+|--------|-----|
+| Fontys | `fhict.instructure.com` |
+| HvA | `canvas.hva.nl` |
+| TU/e | `canvas.tue.nl` |
+| UvA | `canvas.uva.nl` |
+| VU | `canvas.vu.nl` |
+| HU | `canvas.hu.nl` |
+| Saxion | `saxion.instructure.com` |
+
+### Calendar Export (.ics)
+Alle deadlines exporteren als `.ics` bestand voor Google Calendar, Apple Calendar en Outlook:
+
+```
+export-to-calendar --days 30 --onlyOpen
+```
+
+Genereert een downloadbaar `canvas-deadlines.ics` bestand met alle deadlines als kalender events.
+
+## Ontwikkeling
+
+```bash
+# Development mode
+npm run dev
+
+# Build
+npm run build
+
+# Extensie bouwen
+npm run build-extension
+```
+
+## Licentie
+
+MIT - Zie [LICENSE](LICENSE)
+
+## Credits
+
+Gebaseerd op [canvas-mcp](https://github.com/r-huijts/canvas-mcp) door R.Huijts.
